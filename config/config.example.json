@@ -1,0 +1,132 @@
+{
+  "defaults": {
+    "alidocs_url": "https://alidocs.dingtalk.com/spreadsheetv2/wByVB5LaHzJ90N28/edit?dontjump=true&chInfo=im&utm_medium=im_card&utm_source=im&dentryKey=wByVB5LaHzJ90N28&docKey=8oLl952XjER6dlap&type=s",
+    "sheet_name": "湖北益佳通",
+    "output_dir": "C:\\Users\\Administrator\\Desktop\\截图",
+    "imgbed_upload_url": "https://imgbed-e0n.pages.dev/upload?serverCompress=true&uploadChannel=telegram&uploadNameType=default&autoRetry=true&uploadFolder=",
+    "dingtalk": {
+      "webhook": "https://oapi.dingtalk.com/robot/send?access_token=YOUR_ACCESS_TOKEN",
+      "secret": "YOUR_SECRET"
+    },
+    "robot_configs": [
+      {
+        "id": "default-bot",
+        "name": "默认机器人",
+        "enabled": true,
+        "message_mode": "markdown"
+      }
+    ],
+    "default_robot_id": "default-bot",
+    "app_settings": {
+      "auto_start_scheduler": true
+    },
+    "browser": {
+      "tab_keyword": "",
+      "tab_url_keyword": ""
+    },
+    "capture": {
+      "cell_range": "M:AE",
+      "optimize_width": true,
+      "font_size": 11,
+      "viewport_max_width": 5200,
+      "title_prefix": "阿里文档截图"
+    },
+    "message": {
+      "mode": "markdown",
+      "title": "截图通知",
+      "text": "截图任务完成"
+    },
+    "mode": "filter_capture"
+  },
+  "tasks": [
+    {
+      "id": "hubei-no-demo",
+      "enabled": true,
+      "name": "湖北益佳通_否_优化发送",
+      "robot_id": "default-bot",
+      "mode": "filter_capture",
+      "schedule": {
+        "type": "daily",
+        "time": "09:00"
+      },
+      "sheet_name": "湖北益佳通",
+      "browser_target": {
+        "tab_keyword": "",
+        "tab_url_keyword": ""
+      },
+      "capture": {
+        "cell_range": "M:AE",
+        "optimize_width": true,
+        "title_prefix": "湖北益佳通截图"
+      },
+      "filter": {
+        "enabled": true,
+        "column_name": "现场问题是否关闭",
+        "equals": "否"
+      },
+      "message": {
+        "mode": "markdown",
+        "title": "截图通知",
+        "text": "湖北益佳通 - 现场问题是否关闭 = 否"
+      }
+    },
+    {
+      "id": "range-demo",
+      "enabled": false,
+      "name": "直接区域截图示例",
+      "robot_id": "default-bot",
+      "mode": "direct_range",
+      "schedule": {
+        "type": "weekly",
+        "weekday": "monday",
+        "time": "18:30"
+      },
+      "sheet_name": "湖北益佳通",
+      "browser_target": {
+        "tab_keyword": "",
+        "tab_url_keyword": ""
+      },
+      "capture": {
+        "cell_range": "A1:F7",
+        "optimize_width": true,
+        "title_prefix": "区域截图"
+      },
+      "filter": {
+        "enabled": false
+      },
+      "message": {
+        "mode": "markdown",
+        "title": "截图通知",
+        "text": "直接区域截图"
+      }
+    },
+    {
+      "id": "daily-summary-demo",
+      "enabled": false,
+      "name": "多任务合并发送示例",
+      "robot_id": "default-bot",
+      "mode": "merge_send",
+      "schedule": {
+        "type": "daily",
+        "time": "09:30"
+      },
+      "browser_target": {
+        "tab_keyword": "",
+        "tab_url_keyword": ""
+      },
+      "merge": {
+        "enabled": true,
+        "task_ids": [
+          "hubei-no-demo",
+          "range-demo"
+        ],
+        "include_subtitles": true
+      },
+      "message": {
+        "mode": "markdown",
+        "title": "每日截图汇总",
+        "text": "以下为今日多个任务截图汇总"
+      }
+    }
+  ]
+}

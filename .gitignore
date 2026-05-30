@@ -1,0 +1,26 @@
+# Secrets & live config (config.json holds real DingTalk webhook tokens/secrets)
+.env
+config/config.json
+config/config.merge-test.json
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Runtime output: screenshots, scheduler/webui state, logs, browser profile, backups
+output/
+
+# Editor / OS / generated launchers
+*.lnk
+
+# Tooling session scratch dirs
+.omo/
+.sisyphus/
+.claude/settings.local.json
+
+# NodeSpider (independent sub-project)
+NodeSpider/__pycache__/
+NodeSpider/.streamlit/
+NodeSpider/.pytest_cache/
+
+node_modules/
