@@ -16,7 +16,7 @@ output/
 # Tooling session scratch dirs
 .omo/
 .sisyphus/
-.claude/settings.local.json
+.claude/
 
 # NodeSpider (independent sub-project)
 NodeSpider/__pycache__/
