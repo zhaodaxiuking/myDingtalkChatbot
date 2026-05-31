@@ -1,6 +1,7 @@
 from copy import deepcopy
 from datetime import datetime
 
+from .config_loader import normalize_task_robot_ids
 from .alidocs_capture import capture_from_alidocs
 from .dingtalk_sender import DingtalkSender
 
@@ -20,16 +21,6 @@ def _build_merged_header_text(text):
 def _build_subtask_heading_text(text):
     return f'> {text}' if text else ''
 
-
-def _get_task_robot_ids(task):
-    robot_ids = task.get('robot_ids') or []
-    if isinstance(robot_ids, str):
-        robot_ids = [robot_ids]
-    robot_ids = [str(x).strip() for x in robot_ids if str(x).strip()]
-    if robot_ids:
-        return robot_ids
-    robot_id = str(task.get('robot_id') or '').strip()
-    return [robot_id] if robot_id else []
 
 
 def _build_sender(task):
@@ -227,7 +218,7 @@ def _build_merged_markdown_text(task, merged_items):
 
 
 def run_task(task):
-    robot_ids = _get_task_robot_ids(task)
+    robot_ids = normalize_task_robot_ids(task)
     base_task = task if not robot_ids else _clone_task_for_robot(task, robot_ids[0])
     prepared = _prepare_task_payload(base_task)
 
@@ -263,7 +254,7 @@ def test_upload_only(task):
             'task_id': task.get('_task_id') or task.get('id'),
             'items': [_capture_single_task(child_task) for child_task in child_tasks],
             'robot_id': task.get('robot_id') or '',
-            'robot_ids': _get_task_robot_ids(task),
+            'robot_ids': normalize_task_robot_ids(task),
         }
 
     capture_result = capture_from_alidocs(task)
@@ -273,7 +264,7 @@ def test_upload_only(task):
             'upload_url': '',
             'message_text': _build_empty_filter_text(task),
             'robot_id': task.get('robot_id') or '',
-            'robot_ids': _get_task_robot_ids(task),
+            'robot_ids': normalize_task_robot_ids(task),
         }
     sender = _build_sender(task)
     upload_url = sender.upload_local_image(capture_result['imagePath'])
@@ -281,5 +272,5 @@ def test_upload_only(task):
         'capture': capture_result,
         'upload_url': upload_url,
         'robot_id': task.get('robot_id') or '',
-        'robot_ids': _get_task_robot_ids(task),
+        'robot_ids': normalize_task_robot_ids(task),
     }

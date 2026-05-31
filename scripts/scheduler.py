@@ -32,6 +32,26 @@ STATUS = {
 }
 REGISTERED_JOBS = {}  # 记录已注册的任务ID，用于检测配置变化
 REGISTERED_JOBS_LOCK = threading.Lock()
+WEEKDAY_MAP = {
+    'monday': schedule.every().monday,
+    'tuesday': schedule.every().tuesday,
+    'wednesday': schedule.every().wednesday,
+    'thursday': schedule.every().thursday,
+    'friday': schedule.every().friday,
+    'saturday': schedule.every().saturday,
+    'sunday': schedule.every().sunday,
+}
+
+CN_WEEKDAY_MAP = {
+    '周一': 'monday',
+    '周二': 'tuesday',
+    '周三': 'wednesday',
+    '周四': 'thursday',
+    '周五': 'friday',
+    '周六': 'saturday',
+    '周日': 'sunday',
+}
+
 
 
 def now_text():
@@ -166,26 +186,7 @@ def normalize_time_text(value):
 
 
 def register_jobs(config_path):
-    global REGISTERED_JOBS
     cfg = load_config(config_path)
-    weekday_map = {
-        'monday': schedule.every().monday,
-        'tuesday': schedule.every().tuesday,
-        'wednesday': schedule.every().wednesday,
-        'thursday': schedule.every().thursday,
-        'friday': schedule.every().friday,
-        'saturday': schedule.every().saturday,
-        'sunday': schedule.every().sunday,
-    }
-    cn_map = {
-        '周一': 'monday',
-        '周二': 'tuesday',
-        '周三': 'wednesday',
-        '周四': 'thursday',
-        '周五': 'friday',
-        '周六': 'saturday',
-        '周日': 'sunday',
-    }
 
     for item in list_tasks(cfg, enabled_only=True):
         schedule_cfg = item.get('schedule', {}) or {}
@@ -199,8 +200,8 @@ def register_jobs(config_path):
             REGISTERED_JOBS[item['id']] = time_text
         elif schedule_type == 'weekly':
             weekday = str(schedule_cfg.get('weekday', 'monday')).strip().lower()
-            weekday = cn_map.get(weekday, weekday)
-            job = weekday_map.get(weekday)
+            weekday = CN_WEEKDAY_MAP.get(weekday, weekday)
+            job = WEEKDAY_MAP.get(weekday)
             if not job:
                 print(f"skip task {item['id']}: invalid weekday {schedule_cfg.get('weekday')}")
                 continue
@@ -238,24 +239,6 @@ def reload_jobs(config_path):
     
     # 重新注册任务
     cfg = load_config(config_path)
-    weekday_map = {
-        'monday': schedule.every().monday,
-        'tuesday': schedule.every().tuesday,
-        'wednesday': schedule.every().wednesday,
-        'thursday': schedule.every().thursday,
-        'friday': schedule.every().friday,
-        'saturday': schedule.every().saturday,
-        'sunday': schedule.every().sunday,
-    }
-    cn_map = {
-        '周一': 'monday',
-        '周二': 'tuesday',
-        '周三': 'wednesday',
-        '周四': 'thursday',
-        '周五': 'friday',
-        '周六': 'saturday',
-        '周日': 'sunday',
-    }
     
     new_jobs = {}
     for item in list_tasks(cfg, enabled_only=True):
@@ -270,8 +253,8 @@ def reload_jobs(config_path):
             new_jobs[item['id']] = time_text
         elif schedule_type == 'weekly':
             weekday = str(schedule_cfg.get('weekday', 'monday')).strip().lower()
-            weekday = cn_map.get(weekday, weekday)
-            job = weekday_map.get(weekday)
+            weekday = CN_WEEKDAY_MAP.get(weekday, weekday)
+            job = WEEKDAY_MAP.get(weekday)
             if not job:
                 continue
             job.at(time_text).do(scheduled_enqueue, config_path, item['id'])

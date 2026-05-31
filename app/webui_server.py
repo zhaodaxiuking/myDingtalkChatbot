@@ -1092,6 +1092,12 @@ def start_scheduler(force=False):
         creationflags=creationflags,
         close_fds=True,
     )
+    deadline = time.time() + 4
+    while time.time() < deadline:
+        time.sleep(0.3)
+        s = load_scheduler_status()
+        if s.get('scheduler_running') and s.get('pid'):
+            return f"Scheduler started, PID={s.get('pid')}"
     return '已发起启动调度器请求，请刷新查看状态'
 
 
@@ -1106,7 +1112,11 @@ def stop_scheduler():
         return f'检测到陈旧调度器状态，已清理（原 PID={pid}）'
     try:
         subprocess.run(['taskkill', '/PID', str(pid), '/F'], check=True, capture_output=True, text=True)
-        time.sleep(1)
+        deadline = time.time() + 3
+        while time.time() < deadline:
+            time.sleep(0.3)
+            if not _pid_exists(pid):
+                break
         _clear_stale_scheduler_artifacts(status)
         return f'已停止调度器，PID={pid}'
     except subprocess.CalledProcessError as e:
@@ -1157,7 +1167,7 @@ body{{font-family:Arial,"Microsoft YaHei",sans-serif;margin:0;background:#f6f8fb
 h1{{margin:0 0 12px;font-size:28px}}
 .desc{{color:#475467;line-height:1.7}}
 .code{{margin-top:16px;padding:14px 16px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;white-space:pre-wrap;word-break:break-word}}
-</style></head><body><div class="wrap"><div class="card"><h1>项目正在关闭</h1><div class="desc">已收到关闭请求，正在停止调度器、截图浏览器和 WebUI 进程。</div><div class="code">{html.escape(str(message or '项目正在关闭，请稍候。'))}</div></div></div></body></html>'''
+</style></head><body onload="setTimeout(function(){{window.close()}},2000)"><div class="wrap"><div class="card"><h1>项目正在关闭</h1><div class="desc">已收到关闭请求，正在停止调度器、截图浏览器和 WebUI 进程。</div><div class="code">{html.escape(str(message or '项目正在关闭，请稍候。'))}</div></div></div></body></html>'''
 
 
 def restart_project():
@@ -1270,7 +1280,7 @@ def _task_rows(tasks, merge=False):
     rows = []
     for task in tasks:
         task_id = str(task.get('id') or '')
-        task_id_json = json.dumps(task_id, ensure_ascii=False)
+        task_id_json = html.escape(json.dumps(task_id, ensure_ascii=False))
         merge_cfg = task.get('merge', {}) or {}
         merge_ids = ', '.join(merge_cfg.get('task_ids', []) or [])
         capture_cfg = task.get('capture', {}) or {}
@@ -1323,20 +1333,20 @@ def render_robot_form(title='机器人配置', robot=None, message=''):
     secret_value = status['secret']['masked'] if status['secret']['configured'] else ''
     enabled_checked = 'checked' if robot.get('enabled', True) else ''
     return f'''<div style="padding:0;">
-<h2 style="margin:0 0 20px 0;font-size:20px;color:#e2e8f0;">{html.escape(title)}</h2>
-{('<div style="padding:12px 16px;background:rgba(22,163,74,0.15);color:#4ade80;border-radius:8px;margin-bottom:16px;border:1px solid rgba(22,163,74,0.3);">'+html.escape(message)+'</div>') if message else ''}
+<h2 style="margin:0 0 20px 0;font-size:20px;color:#111827;">{html.escape(title)}</h2>
+{('<div style="padding:12px 16px;background:#f0fdf4;color:#16a34a;border-radius:8px;margin-bottom:16px;border:1px solid #bbf7d0;">'+html.escape(message)+'</div>') if message else ''}
 <form method="post" action="/save-robot">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">机器人名称</label><input name="robot_name" value="{html.escape(robot.get('name', ''))}" placeholder="示例：生产群机器人" style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">机器人ID（可选）</label><input name="robot_id" value="{html.escape(robot_id)}" placeholder="留空自动生成" style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">Webhook</label><input type="password" name="robot_webhook" value="{html.escape(webhook_value)}" placeholder="请输入 Webhook" style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">Secret</label><input type="password" name="robot_secret" value="{html.escape(secret_value)}" placeholder="请输入 Secret" style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">机器人名称</label><input name="robot_name" value="{html.escape(robot.get('name', ''))}" placeholder="示例：生产群机器人" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">机器人ID（可选）</label><input name="robot_id" value="{html.escape(robot_id)}" placeholder="留空自动生成" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">Webhook</label><input type="password" name="robot_webhook" value="{html.escape(webhook_value)}" placeholder="请输入 Webhook" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">Secret</label><input type="password" name="robot_secret" value="{html.escape(secret_value)}" placeholder="请输入 Secret" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div>
 </div>
-<div style="margin-top:16px;"><label style="display:flex;align-items:center;gap:8px;color:#e2e8f0;cursor:pointer;"><input type="checkbox" name="robot_enabled" {enabled_checked} style="width:auto;">启用机器人</label></div>
-<div style="margin-top:12px;padding:10px 14px;background:rgba(59,130,246,0.1);color:#60a5fa;border-radius:8px;font-size:13px;border:1px solid rgba(59,130,246,0.2);">图床上传地址已改为首页单独维护，保存机器人不会再覆盖图床配置。</div>
-<div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;padding-top:16px;border-top:1px solid #334155;">
-<button type="button" onclick="closeModal()" style="padding:10px 20px;background:#475569;color:#e2e8f0;border:none;border-radius:8px;cursor:pointer;font-weight:500;">取消</button>
-<button type="submit" style="padding:10px 20px;background:#10b981;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:500;">保存机器人</button>
+<div style="margin-top:16px;"><label style="display:flex;align-items:center;gap:8px;color:#111827;cursor:pointer;"><input type="checkbox" name="robot_enabled" {enabled_checked} style="width:auto;">启用机器人</label></div>
+<div style="margin-top:12px;padding:10px 14px;background:#eff6ff;color:#2563eb;border-radius:8px;font-size:13px;border:1px solid #bfdbfe;">图床上传地址已改为首页单独维护，保存机器人不会再覆盖图床配置。</div>
+<div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;padding-top:16px;border-top:1px solid #e5e7eb;">
+<button type="button" onclick="closeModal()" style="padding:10px 20px;background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;font-weight:500;">取消</button>
+<button type="submit" style="padding:10px 20px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:500;">保存机器人</button>
 </div>
 </form>
 </div>'''
@@ -1401,40 +1411,40 @@ def render_task_form(title, action, task=None, message=''):
         return 'selected' if value == expected else ''
 
     return f'''<div style="padding:0;">
-<h2 style="margin:0 0 20px 0;font-size:20px;color:#e2e8f0;">{html.escape(title)}</h2>
+<h2 style="margin:0 0 20px 0;font-size:20px;color:#111827;">{html.escape(title)}</h2>
 {('<div style="padding:12px 16px;background:rgba(22,163,74,0.15);color:#4ade80;border-radius:8px;margin-bottom:16px;border:1px solid rgba(22,163,74,0.3);">'+html.escape(message)+'</div>') if message else ''}
 <form method="post" action="{html.escape(action)}" id="taskForm">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">任务名称</label><input name="task_name" value="{html.escape(task.get('name', ''))}" style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">任务ID</label><input name="task_id" value="{html.escape(task.get('id', ''))}" style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">机器人（可多选）</label><select name="robot_ids" multiple size="4" style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;">{''.join(robot_options)}</select></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">是否启用合并发送</label><select id="merge_enabled" name="merge_enabled" onchange="onMergeChange()" style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"><option value="否" {selected_value(merge_enabled,'否')}>否</option><option value="是" {selected_value(merge_enabled,'是')}>是</option></select></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">周期</label><select id="cycle" name="cycle" onchange="onCycleChange()" style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"><option value="daily" {selected_value(cycle,'daily')}>每日</option><option value="weekly" {selected_value(cycle,'weekly')}>每周</option></select></div>
-<div id="week-wrap" style="display:none;"><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">每周几</label><select name="weekday" style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"><option value="monday" {selected_value(weekday,'monday')}>周一</option><option value="tuesday" {selected_value(weekday,'tuesday')}>周二</option><option value="wednesday" {selected_value(weekday,'wednesday')}>周三</option><option value="thursday" {selected_value(weekday,'thursday')}>周四</option><option value="friday" {selected_value(weekday,'friday')}>周五</option><option value="saturday" {selected_value(weekday,'saturday')}>周六</option><option value="sunday" {selected_value(weekday,'sunday')}>周日</option></select></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">时间</label><input name="time" value="{html.escape(schedule.get('time', '09:00'))}" style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">标签关键字</label><input name="browser_tab_keyword" value="{html.escape(browser_target.get('tab_keyword', ''))}" placeholder="匹配浏览器标签标题" style="width:100%;padding:10px 12px;background:#1e293b;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">任务名称</label><input name="task_name" value="{html.escape(task.get('name', ''))}" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">任务ID</label><input name="task_id" value="{html.escape(task.get('id', ''))}" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">机器人（可多选）</label><select name="robot_ids" multiple size="4" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;">{''.join(robot_options)}</select></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">是否启用合并发送</label><select id="merge_enabled" name="merge_enabled" onchange="onMergeChange()" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"><option value="否" {selected_value(merge_enabled,'否')}>否</option><option value="是" {selected_value(merge_enabled,'是')}>是</option></select></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">周期</label><select id="cycle" name="cycle" onchange="onCycleChange()" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"><option value="daily" {selected_value(cycle,'daily')}>每日</option><option value="weekly" {selected_value(cycle,'weekly')}>每周</option></select></div>
+<div id="week-wrap" style="display:none;"><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">每周几</label><select name="weekday" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"><option value="monday" {selected_value(weekday,'monday')}>周一</option><option value="tuesday" {selected_value(weekday,'tuesday')}>周二</option><option value="wednesday" {selected_value(weekday,'wednesday')}>周三</option><option value="thursday" {selected_value(weekday,'thursday')}>周四</option><option value="friday" {selected_value(weekday,'friday')}>周五</option><option value="saturday" {selected_value(weekday,'saturday')}>周六</option><option value="sunday" {selected_value(weekday,'sunday')}>周日</option></select></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">时间</label><input name="time" value="{html.escape(schedule.get('time', '09:00'))}" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">标签关键字</label><input name="browser_tab_keyword" value="{html.escape(browser_target.get('tab_keyword', ''))}" placeholder="匹配浏览器标签标题" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div>
 </div>
-<div id="merge-task-wrap" style="display:none;margin-top:16px;padding:16px;background:#1e293b;border-radius:8px;border:1px solid #334155;">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;"><div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">合并消息标题</label><input name="merge_title" value="{html.escape(merge_title)}" style="width:100%;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div><div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">合并消息正文</label><input name="merge_text" value="{html.escape(merge_text)}" style="width:100%;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">子任务ID</label><textarea name="merge_task_ids" style="width:100%;min-height:100px;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;resize:vertical;">{html.escape(merge_task_ids_text)}</textarea></div>
-<div style="margin-top:12px;"><label style="display:flex;align-items:center;gap:8px;color:#e2e8f0;cursor:pointer;"><input type="checkbox" name="merge_include_subtitles" {merge_include_subtitles_checked} style="width:auto;">每张图前面带子任务标题</label></div>
+<div id="merge-task-wrap" style="display:none;margin-top:16px;padding:16px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;"><div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">合并消息标题</label><input name="merge_title" value="{html.escape(merge_title)}" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div><div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">合并消息正文</label><input name="merge_text" value="{html.escape(merge_text)}" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">子任务ID</label><textarea name="merge_task_ids" style="width:100%;min-height:100px;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;resize:vertical;">{html.escape(merge_task_ids_text)}</textarea></div>
+<div style="margin-top:12px;"><label style="display:flex;align-items:center;gap:8px;color:#111827;cursor:pointer;"><input type="checkbox" name="merge_include_subtitles" {merge_include_subtitles_checked} style="width:auto;">每张图前面带子任务标题</label></div>
 </div>
-<div id="single-task-wrap" style="margin-top:16px;padding:16px;background:#1e293b;border-radius:8px;border:1px solid #334155;">
+<div id="single-task-wrap" style="margin-top:16px;padding:16px;background:#f9fafb;border-radius:8px;border:1px solid #e5e7eb;">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">模式</label><select id="mode" name="mode" onchange="onModeChange()" style="width:100%;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"><option value="direct_range" {selected_value(mode,'direct_range')}>1. 直接根据区域截图</option><option value="filter_capture" {selected_value(mode,'filter_capture')}>2. 根据筛选条件截图</option></select></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">sheet（表名）</label><input name="sheet_name" value="{html.escape(task.get('sheet_name', ''))}" style="width:100%;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div>
-<div id="filter-wrap"><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">是否筛选</label><select name="filter_enabled" style="width:100%;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"><option value="是" {selected_value(filter_enabled,'是')}>是</option><option value="否" {selected_value(filter_enabled,'否')}>否</option></select></div>
-<div id="filter-wrap-2"><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">筛选表达式</label><input name="filter_expression" value="{html.escape(filter_expression)}" placeholder="列名=值" style="width:100%;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">截图区域</label><input name="cell_range" value="{html.escape(capture.get('cell_range', ''))}" style="width:100%;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"></div>
-<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#94a3b8;font-size:13px;">截图样式</label><select name="capture_style" style="width:100%;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;box-sizing:border-box;"><option value="compact" {selected_value(capture_style,'compact')}>紧凑版</option><option value="standard" {selected_value(capture_style,'standard')}>标准版</option></select></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">模式</label><select id="mode" name="mode" onchange="onModeChange()" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"><option value="direct_range" {selected_value(mode,'direct_range')}>1. 直接根据区域截图</option><option value="filter_capture" {selected_value(mode,'filter_capture')}>2. 根据筛选条件截图</option></select></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">sheet（表名）</label><input name="sheet_name" value="{html.escape(task.get('sheet_name', ''))}" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div>
+<div id="filter-wrap"><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">是否筛选</label><select name="filter_enabled" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"><option value="是" {selected_value(filter_enabled,'是')}>是</option><option value="否" {selected_value(filter_enabled,'否')}>否</option></select></div>
+<div id="filter-wrap-2"><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">筛选表达式</label><input name="filter_expression" value="{html.escape(filter_expression)}" placeholder="列名=值" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">截图区域</label><input name="cell_range" value="{html.escape(capture.get('cell_range', ''))}" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"></div>
+<div><label style="display:block;font-weight:600;margin-bottom:6px;color:#374151;font-size:13px;">截图样式</label><select name="capture_style" style="width:100%;padding:10px 12px;background:#ffffff;border:1px solid #d1d5db;border-radius:8px;color:#111827;box-sizing:border-box;"><option value="compact" {selected_value(capture_style,'compact')}>紧凑版</option><option value="standard" {selected_value(capture_style,'standard')}>标准版</option></select></div>
 </div>
 </div>
 <div style="margin-top:20px;display:flex;align-items:center;gap:16px;">
-<label style="display:flex;align-items:center;gap:8px;color:#e2e8f0;cursor:pointer;font-weight:600;"><input type="checkbox" name="enabled" {enabled_checked} style="width:auto;">启用该任务</label>
+<label style="display:flex;align-items:center;gap:8px;color:#111827;cursor:pointer;font-weight:600;"><input type="checkbox" name="enabled" {enabled_checked} style="width:auto;">启用该任务</label>
 </div>
-<div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;padding-top:16px;border-top:1px solid #334155;">
-<button type="button" onclick="closeModal()" style="padding:10px 20px;background:#475569;color:#e2e8f0;border:none;border-radius:8px;cursor:pointer;font-weight:500;">取消</button>
-<button type="submit" style="padding:10px 20px;background:#10b981;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:500;">保存任务</button>
+<div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;padding-top:16px;border-top:1px solid #e5e7eb;">
+<button type="button" onclick="closeModal()" style="padding:10px 20px;background:#f1f5f9;color:#374151;border:1px solid #d1d5db;border-radius:8px;cursor:pointer;font-weight:500;">取消</button>
+<button type="submit" style="padding:10px 20px;background:linear-gradient(135deg,#10b981,#059669);color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:500;">保存任务</button>
 </div>
 </form>
 </div>
@@ -1469,7 +1479,7 @@ def render_page(message='', result=None, error=''):
         for evt in last_events[:10]
     ) or '<li>暂无</li>'
     robot_rows = ''.join(
-        f"<tr><td><code>{html.escape(r['id'])}</code></td><td>{html.escape(r['name'])}</td><td>{('<span class=\"badge badge-success\">启用</span>' if r['enabled'] else '<span class=\"badge badge-muted\">停用</span>')}</td><td>{('<span class=\"chip chip-ok\">已配置</span>' if r['webhook_configured'] else '<span class=\"chip chip-warn\">未配置</span>')} <code>{html.escape(r['webhook_masked'] or '')}</code></td><td>{('<span class=\"chip chip-ok\">已配置</span>' if r['secret_configured'] else '<span class=\"chip chip-warn\">未配置</span>')} <code>{html.escape(r['secret_masked'] or '')}</code></td><td class='row-actions'><button type='button' class='row-action edit-action' onclick='openRobotEditPopup({json.dumps(r['id'], ensure_ascii=False)})'>编辑</button><form method='post' action='/delete-robot' class='inline-form' onsubmit=\"return confirm('确定删除机器人 {html.escape(r['id'])} 吗？');\"><input type='hidden' name='robot_id' value='{html.escape(r['id'])}'><button type='submit' class='row-action delete-action'>删除</button></form></td></tr>"
+        f"<tr><td><code>{html.escape(r['id'])}</code></td><td>{html.escape(r['name'])}</td><td>{('<span class=\"badge badge-success\">启用</span>' if r['enabled'] else '<span class=\"badge badge-muted\">停用</span>')}</td><td>{('<span class=\"chip chip-ok\">已配置</span>' if r['webhook_configured'] else '<span class=\"chip chip-warn\">未配置</span>')} <code>{html.escape(r['webhook_masked'] or '')}</code></td><td>{('<span class=\"chip chip-ok\">已配置</span>' if r['secret_configured'] else '<span class=\"chip chip-warn\">未配置</span>')} <code>{html.escape(r['secret_masked'] or '')}</code></td><td class='row-actions'><button type='button' class='row-action edit-action' onclick='openRobotEditPopup({html.escape(json.dumps(r['id'], ensure_ascii=False))})'>编辑</button><form method='post' action='/delete-robot' class='inline-form' onsubmit=\"return confirm('确定删除机器人 {html.escape(r['id'])} 吗？');\"><input type='hidden' name='robot_id' value='{html.escape(r['id'])}'><button type='submit' class='row-action delete-action'>删除</button></form></td></tr>"
         for r in vm['robots']
     ) or '<tr><td colspan="6" class="empty-row">暂无机器人配置</td></tr>'
     log_rows = ''.join(
@@ -2278,15 +2288,15 @@ tr.row-disabled:hover td {{
 
 .modal-content {{
   position: relative;
-  background: #1e293b;
+  background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
   border-radius: 18px;
   padding: 28px 28px 24px;
   max-width: 780px;
   width: 100%;
   max-height: calc(100vh - 96px);
   overflow-y: auto;
-  box-shadow: 0 32px 64px -12px rgba(2, 6, 23, 0.55), 0 0 0 1px rgba(148, 163, 184, 0.08);
-  border: 1px solid #334155;
+  box-shadow: 0 24px 48px -12px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
   animation: slideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }}
 
@@ -2299,17 +2309,17 @@ tr.row-disabled:hover td {{
 }}
 
 .modal-content::-webkit-scrollbar-track {{
-  background: #1e293b;
+  background: #f1f5f9;
   border-radius: 3px;
 }}
 
 .modal-content::-webkit-scrollbar-thumb {{
-  background: #475569;
+  background: #cbd5e1;
   border-radius: 3px;
 }}
 
 .modal-content::-webkit-scrollbar-thumb:hover {{
-  background: #64748b;
+  background: #94a3b8;
 }}
 
 .modal-close {{
@@ -2319,9 +2329,9 @@ tr.row-disabled:hover td {{
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  background: rgba(148, 163, 184, 0.15);
+  background: rgba(107, 114, 128, 0.1);
   border: none;
-  color: #cbd5e1;
+  color: #6b7280;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2333,22 +2343,22 @@ tr.row-disabled:hover td {{
 }}
 
 .modal-close:hover {{
-  background: rgba(248, 113, 113, 0.2);
-  color: #fecaca;
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
   transform: rotate(90deg);
 }}
 
 .modal-loading {{
   text-align: center;
   padding: 56px 24px;
-  color: #94a3b8;
+  color: #6b7280;
 }}
 
 .modal-spinner {{
   width: 28px;
   height: 28px;
-  border: 3px solid #334155;
-  border-top-color: #60a5fa;
+  border: 3px solid #e5e7eb;
+  border-top-color: #3b82f6;
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
   margin: 0 auto 14px;
@@ -2357,9 +2367,9 @@ tr.row-disabled:hover td {{
 .modal-error-banner {{
   padding: 12px 16px;
   margin-bottom: 16px;
-  background: rgba(220, 38, 38, 0.12);
-  color: #fca5a5;
-  border: 1px solid rgba(220, 38, 38, 0.3);
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
   border-radius: 10px;
   font-size: 13px;
   line-height: 1.55;
@@ -2373,18 +2383,18 @@ tr.row-disabled:hover td {{
   left: 50%;
   bottom: 36px;
   transform: translate(-50%, 16px);
-  background: linear-gradient(135deg, #0f172a, #1e293b);
-  color: #f1f5f9;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  color: #f8fafc;
   padding: 12px 22px;
   border-radius: 999px;
-  box-shadow: 0 16px 40px -10px rgba(15, 23, 42, 0.5);
+  box-shadow: 0 12px 32px -6px rgba(15, 23, 42, 0.25);
   font-size: 14px;
   font-weight: 500;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.22s ease, transform 0.22s ease;
   z-index: 2000;
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  border: 1px solid rgba(148, 163, 184, 0.25);
 }}
 
 .app-toast.show {{
@@ -2393,8 +2403,8 @@ tr.row-disabled:hover td {{
 }}
 
 .app-toast.error {{
-  background: linear-gradient(135deg, #7f1d1d, #b91c1c);
-  border-color: rgba(252, 165, 165, 0.3);
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  border-color: rgba(252, 165, 165, 0.4);
 }}
 
 /* 模态框内的表单元素 */
@@ -2406,10 +2416,10 @@ tr.row-disabled:hover td {{
 .modal-content textarea {{
   width: 100%;
   padding: 10px 12px;
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
-  color: #e2e8f0;
+  color: #111827;
   box-sizing: border-box;
   font-size: 14px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -2427,7 +2437,7 @@ tr.row-disabled:hover td {{
   display: block;
   font-weight: 600;
   margin-bottom: 6px;
-  color: #94a3b8;
+  color: #374151;
   font-size: 13px;
 }}
 
@@ -2449,9 +2459,9 @@ tr.row-disabled:hover td {{
 
 .modal-content button[type="button"] {{
   padding: 10px 20px;
-  background: #475569;
-  color: #e2e8f0;
-  border: none;
+  background: #f1f5f9;
+  color: #374151;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
@@ -2459,7 +2469,7 @@ tr.row-disabled:hover td {{
 }}
 
 .modal-content button[type="button"]:hover {{
-  background: #64748b;
+  background: #e2e8f0;
 }}
 </style>
 <script>
@@ -2602,9 +2612,9 @@ function openRobotConfigPopup(){{openModal('新增机器人', '/robot-edit', {{c
 function openRobotEditPopup(robotId){{openModal('编辑机器人', '/robot-edit?robot_id=' + encodeURIComponent(robotId), {{compact:true}});}}
 function openTaskPopup(kind){{const qs=kind==='merge' ? '?merge=1' : ''; openModal('新增任务', '/edit'+qs);}}
 function openTaskEditPopup(taskId, isMerge){{const qs='?task_id='+encodeURIComponent(taskId)+(isMerge ? '&merge=1' : ''); openModal('编辑任务', '/edit'+qs);}}
-function openCaptureBrowser(){{window.location.href='/open-browser';}}
+function openCaptureBrowser(){{showToast('Opening browser...');fetch('/open-browser',{{headers:{{'X-Requested-With':'XMLHttpRequest'}}}}).then(function(r){{return r.text()}}).then(function(t){{var m=t.match(/<div class="desc">([^<]+)<\/div>/)||t.match(/<div[^>]*>([^<]+)<\/div>/);showToast(m?m[1].substring(0,150):'Browser opened')}}).catch(function(e){{showToast('Failed: '+(e.message||e),'error')}});}}
 function confirmShutdownProject(){{
-  return confirm('确定关闭该项目吗？\n\n将停止调度器、关闭截图浏览器，并退出当前 WebUI。');
+  return confirm('确定关闭该项目吗？\\n\\n将停止调度器、关闭截图浏览器，并退出当前 WebUI。');
 }}
 
 document.addEventListener('click', function(e) {{

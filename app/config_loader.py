@@ -1,3 +1,4 @@
+import copy
 import json
 from copy import deepcopy
 from pathlib import Path
@@ -21,7 +22,7 @@ def normalize_imgbed_upload_url(url):
 
 
 def apply_runtime_secrets(data):
-    cfg = json.loads(json.dumps(data, ensure_ascii=False))
+    cfg = copy.deepcopy(data)
     defaults = cfg.setdefault('defaults', {})
     defaults.setdefault('app_settings', {})
     defaults.setdefault('browser', {})
@@ -53,6 +54,17 @@ def apply_runtime_secrets(data):
     return cfg
 
 
+def _resolve_browser_target(task, defaults=None):
+    """Merge browser_target from task with defaults."""
+    defaults = defaults or {}
+    browser_target = task.get("browser_target") or {}
+    default_browser = defaults.get("browser", {}) or {}
+    return {
+        "tab_keyword": browser_target.get("tab_keyword") or default_browser.get("tab_keyword", ""),
+        "tab_url_keyword": browser_target.get("tab_url_keyword") or default_browser.get("tab_url_keyword", ""),
+    }
+
+
 def load_config(config_path):
     path = Path(config_path)
     with path.open('r', encoding='utf-8') as f:
@@ -62,7 +74,7 @@ def load_config(config_path):
 
 def save_config(config_path, data):
     path = Path(config_path)
-    cfg = json.loads(json.dumps(data, ensure_ascii=False))
+    cfg = copy.deepcopy(data)
     defaults = cfg.setdefault('defaults', {})
     defaults['imgbed_upload_url'] = normalize_imgbed_upload_url(defaults.get('imgbed_upload_url', ''))
     with path.open('w', encoding='utf-8') as f:
@@ -131,12 +143,7 @@ def build_task_config(root_config, task_id):
             if 'sheet_name' not in task or not task.get('sheet_name'):
                 merged['sheet_name'] = ''
 
-            browser_target = merged.get('browser_target') or {}
-            default_browser = defaults.get('browser', {}) or {}
-            merged['browser_target'] = {
-                'tab_keyword': browser_target.get('tab_keyword') or default_browser.get('tab_keyword', ''),
-                'tab_url_keyword': browser_target.get('tab_url_keyword') or default_browser.get('tab_url_keyword', ''),
-            }
+            merged["browser_target"] = _resolve_browser_target(merged, defaults)
 
             robot_ids = normalize_task_robot_ids(merged, defaults.get('default_robot_id'))
             merged['robot_ids'] = robot_ids
@@ -168,12 +175,7 @@ def build_task_config(root_config, task_id):
                         child_merged['alidocs_url'] = ''
                     if 'sheet_name' not in child or not child.get('sheet_name'):
                         child_merged['sheet_name'] = ''
-                    child_browser_target = child_merged.get('browser_target') or {}
-                    default_browser = defaults.get('browser', {}) or {}
-                    child_merged['browser_target'] = {
-                        'tab_keyword': child_browser_target.get('tab_keyword') or default_browser.get('tab_keyword', ''),
-                        'tab_url_keyword': child_browser_target.get('tab_url_keyword') or default_browser.get('tab_url_keyword', ''),
-                    }
+                    child_merged["browser_target"] = _resolve_browser_target(child_merged, defaults)
                     parent_robot_ids = merged.get('robot_ids') or normalize_task_robot_ids(merged, defaults.get('default_robot_id'))
                     child_robot_ids = normalize_task_robot_ids(child_merged, '') or parent_robot_ids
                     child_merged['robot_ids'] = child_robot_ids
@@ -205,8 +207,6 @@ def list_tasks(root_config, enabled_only=False):
         next_run = compute_next_run(task.get('schedule', {}), now=datetime.now())
         task_robot_ids = normalize_task_robot_ids(task, default_robot_id)
         task_robot_id = task_robot_ids[0] if task_robot_ids else ''
-        browser_target = task.get('browser_target') or {}
-        default_browser = defaults.get('browser', {}) or {}
         tasks.append({
             'id': task.get('id'),
             'name': task.get('name'),
@@ -218,10 +218,7 @@ def list_tasks(root_config, enabled_only=False):
             'capture': task.get('capture', {}),
             'merge': task.get('merge', {}),
             'message': task.get('message', {}),
-            'browser_target': {
-                'tab_keyword': browser_target.get('tab_keyword') or default_browser.get('tab_keyword', ''),
-                'tab_url_keyword': browser_target.get('tab_url_keyword') or default_browser.get('tab_url_keyword', ''),
-            },
+            'browser_target': _resolve_browser_target(task, defaults),
             'robot_id': task_robot_id,
             'robot_ids': task_robot_ids,
             'next_run': next_run.strftime('%Y-%m-%d %H:%M:%S') if next_run else None,
